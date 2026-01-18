@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Memories Scrapbook</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --book-width: 800px;  /* Total width when open */
+            --book-height: 550px;
+            --sheet-width: 400px; /* Half of book width */
+            --paper-color: #fdfbf7;
+            --cover-color: #5e4b35;
+            --text-color: #3b3b3b;
+            --anim-speed: 1s;
+        }
+
+        * { box-sizing: border-box; }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #333, #555);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .back-button:hover {
+            background: linear-gradient(45deg, #555, #777);
+            box-shadow: 0 6px 15px rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        a {
+            text-decoration: none;
+            color: white;
+            padding: 10px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #2c2c2c;
+            background-image: radial-gradient(#4a4a4a 1px, transparent 1px);
+            background-size: 20px 20px;
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden;
+        }
+
+        /* --- 3D Scene Setup --- */
+        .scene {
+            width: var(--book-width);
+            height: var(--book-height);
+            perspective: 2000px;
+            position: relative;
+        }
+
+        .book {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(10deg); 
+            transition: transform 0.5s;
+        }
+
+        /* --- The Sheet --- */
+        .sheet {
+            width: var(--sheet-width);
+            height: var(--book-height);
+            position: absolute;
+            top: 0;
+            right: 0;
+            transform-origin: left;
+            transform-style: preserve-3d;
+            transition: transform var(--anim-speed) cubic-bezier(0.645, 0.045, 0.355, 1);
+            cursor: pointer;
+        }
+
+        .face {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            overflow: hidden;
+            background-color: var(--paper-color);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.05);
+            border-left: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .front { z-index: 2; background-image: linear-gradient(to left, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 10%); }
+        .back { transform: rotateY(180deg); z-index: 1; background-image: linear-gradient(to right, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 10%); }
+
+        .flipped { transform: rotateY(-180deg); }
+
+        /* --- Design Elements --- */
+        .cover {
+            background-color: var(--cover-color);
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23705a40' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 0h40v40H0V0zm20 20h20v20H20V20zM0 20h20v20H0V20zM20 0h20v20H20V0z'/%3E%3C/g%3E%3C/svg%3E");
+            color: #dcbfa4;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 4px solid #3e3020;
+            text-align: center;
+        }
+        
+        .cover h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            margin: 0;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+            border-bottom: 2px solid #dcbfa4;
+            padding-bottom: 10px;
+        }
+        
+        .cover p {
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.5rem;
+            margin-top: 10px;
+        }
+
+        .page-content {
+            padding: 30px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .center-xy { justify-content: center; align-items: center; }
+        
+        .photo-frame {
+            background: white;
+            padding: 10px 10px 40px 10px;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.2);
+            transform: rotate(-2deg);
+            width: 80%;
+            transition: transform 0.3s;
+            position: relative;
+        }
+        
+        .photo-frame:hover { transform: scale(1.02) rotate(0deg); z-index: 5; }
+        
+        .photo-frame img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border: 1px solid #eee;
+        }
+
+        .tape {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-left: 2px dotted rgba(0,0,0,0.1);
+            border-right: 2px dotted rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        h2 {
+            font-family: 'Dancing Script', cursive;
+            font-size: 2.5rem;
+            color: #5e4b35;
+            margin-bottom: 10px;
+        }
+        
+        p.text-body {
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #444;
+            background-image: repeating-linear-gradient(transparent, transparent 29px, #ccc 30px);
+            background-size: 100% 30px;
+            padding-bottom: 4px;
+        }
+
+        /* Special class for the long poem to make it fit beautifully */
+        p.poem-text {
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.85rem; /* Slightly smaller to fit the poem */
+            line-height: 1.6rem; /* Align with paper lines */
+            color: #222;
+            text-align: justify;
+            background-image: repeating-linear-gradient(transparent, transparent 24px, #ccc 25px); /* Tighter lines */
+            background-size: 100% 25px;
+            padding-bottom: 4px;
+            margin-top: 0;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            z-index: 100;
+            display: flex;
+            gap: 20px;
+        }
+        
+        button {
+            padding: 12px 30px;
+            background: #dcbfa4;
+            border: none;
+            border-radius: 30px;
+            font-family: 'Playfair Display', serif;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            color: #3e3020;
+        }
+        
+        button:hover { background: #fff; transform: translateY(-2px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .decoration-sticker {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            font-size: 2.5rem;
+            opacity: 0.8;
+            transform: rotate(15deg);
+        }
+
+    </style>
+</head>
+<body>
+    <button class="back-button"><a href="intro.html">← Back</a></button>
+<div class="scene">
+    <div class="book" id="book">
+        
+        <div class="sheet" id="sheet1" style="z-index: 5;">
+            <div class="face front cover center-xy">
+                <h1>Memories</h1>
+                <p>Our Adventure Book</p>
+                <div style="font-size: 2rem; margin-top: 20px;">★</div>
+            </div>
+            
+            <div class="face back">
+                <div class="page-content center-xy">
+                    <h2>Where it began...</h2>
+                    <p class="text-body">
+                        Do you remember that first day? The sun was shining, and neither of us knew that a simple "hello" would lead to all of this.<br><br>
+                        Every great story starts with a small moment. This is ours.
+                    </p>
+                    <div class="decoration-sticker">✨</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sheet" id="sheet2" style="z-index: 4;">
+            <div class="face front">
+                <div class="page-content center-xy">
+                    <div class="photo-frame">
+                        <div class="tape"></div>
+                        <img src="1.jpg" alt="Our Photo">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="face back">
+                <div class="page-content center-xy">
+                    <h2>My Heart's Echo</h2>
+                    <p class="poem-text">
+                        I love you with a depth that surprises even me, a love that lives quietly in my heart and loudly in my soul. Every time I think of you, it feels like my heart reaches out for yours, as if it recognizes you as its own. You are the first thought that warms my mornings and the last feeling that lingers in my chest at night. Loving you has changed the way I see the world colors feel warmer, moments feel fuller, and even silence feels meaningful when I imagine it with you.You are my comfort in chaos, my calm when everything feels overwhelming. In your presence, I feel safe enough to be vulnerable, brave enough to dream, and strong enough to love without holding back. I love the way your existence alone brings peace to my restless heart, the way your voice can quiet my fears, and the way your smile feels like a promise that everything will be okay. Even when we are apart, I carry you with me in my thoughts, in my hopes, in every silent prayer my heart whispers.
+                    </p>
+                    <div class="decoration-sticker">❤️</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sheet" id="sheet3" style="z-index: 3;">
+            <div class="face front">
+                <div class="page-content center-xy">
+                     <div class="photo-frame" style="width: 60%; transform: rotate(-5deg); margin-bottom: 20px;">
+                        <img src="2.jpg" alt="Moment 1">
+                    </div>
+                    <div class="photo-frame" style="width: 60%; transform: rotate(5deg);">
+                         <img src="4.png" alt="Moment 2">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="face back">
+                 <div class="page-content center-xy">
+                    <h2>My Forever</h2>
+                    <p class="poem-text">
+                        This love I have for you is not fragile; it is patient, deep, and endlessly devoted. It doesn’t fade with distance or weaken with time it grows stronger, more certain, more real. I don’t just love you for who you are today, but for who you have been, and for every version of you you will become. No matter where life takes us, no matter what storms we face, my heart will always choose you. You are not just someone I love you are my home, my forever, the most beautiful feeling I have ever known.
+                    </p>
+                    <div class="decoration-sticker">♾️</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sheet" id="sheet4" style="z-index: 2;">
+            <div class="face front">
+                <div class="page-content center-xy">
+                    <div class="photo-frame">
+                        <div class="tape"></div>
+                         <img src="5.jpg" alt="Us">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="face back cover center-xy">
+                <h2>To Be Continued...</h2>
+                <p>2025 - Forever</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="controls">
+    <button id="prevBtn" disabled>Previous Page</button>
+    <button id="nextBtn">Next Page</button>
+</div>
+
+<script>
+    // Logic for the realistic page flip
+    const sheets = document.querySelectorAll('.sheet');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    let currentSheet = 0; // 0 means cover is closed
+    const totalSheets = sheets.length;
+
+    function updateZIndex(direction) {
+        let timeout = direction === 'next' ? 500 : 500; 
+
+        sheets.forEach((sheet, index) => {
+            let z = totalSheets - index; 
+            
+            if(index < currentSheet) {
+                z = index + 1;
+            }
+            
+            sheet.style.zIndex = z;
+        });
+    }
+
+    function goNext() {
+        if(currentSheet < totalSheets) {
+            const sheet = sheets[currentSheet];
+            sheet.classList.add('flipped');
+            sheet.style.zIndex = totalSheets + 10;
+            currentSheet++;
+            updateControls();
+            setTimeout(() => {
+                updateZIndex('next');
+            }, 300); 
+        }
+    }
+
+    function goPrev() {
+        if(currentSheet > 0) {
+            currentSheet--;
+            const sheet = sheets[currentSheet];
+            sheet.classList.remove('flipped');
+            sheet.style.zIndex = totalSheets + 10;
+            updateControls();
+            setTimeout(() => {
+                updateZIndex('prev');
+            }, 300);
+        }
+    }
+
+    function updateControls() {
+        prevBtn.disabled = currentSheet === 0;
+        nextBtn.disabled = currentSheet === totalSheets;
+    }
+
+    updateZIndex('next');
+
+    nextBtn.addEventListener('click', goNext);
+    prevBtn.addEventListener('click', goPrev);
+</script>
+
+</body>
+</html>
